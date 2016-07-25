@@ -1,4 +1,5 @@
 #include "cwebdownloader.h"
+#include "assert/advanced_assert.h"
 
 #include "curl/curl.h"
 
@@ -11,7 +12,7 @@ struct MemoryStruct {
 	size_t bytesUsed = 0;
 };
 
-size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, void *userp)
+inline size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, void *userp)
 {
 	const size_t newChunkSize = size * nmemb;
 	MemoryStruct* mem = (MemoryStruct*) userp;
@@ -27,51 +28,56 @@ size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, void *user
 	return newChunkSize;
 }
 
-CWebDownloader::CWebDownloader()
+CWebDownloader::CWebDownloader(const QString& userAgent)
 {
+	curl_global_init(CURL_GLOBAL_ALL);
 
+	/* init the curl session */
+	_curlHandle = curl_easy_init();
+
+	/* send all data to this function  */
+	curl_easy_setopt(_curlHandle, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
+
+	/* some servers don't like requests that are made without a user-agent
+	   field, so we provide one */
+	setUserAgent(userAgent);
+}
+
+CWebDownloader::~CWebDownloader()
+{
+	/* cleanup curl stuff */
+	curl_easy_cleanup(_curlHandle);
+
+	/* we're done with libcurl, so clean it up */
+	curl_global_cleanup();
+}
+
+void CWebDownloader::setUserAgent(const QString& userAgent)
+{
+	assert_r(curl_easy_setopt(_curlHandle, CURLOPT_USERAGENT, userAgent.toUtf8().constData()) == CURLE_OK);
 }
 
 QByteArray CWebDownloader::download(const QString &url)
 {
-	CURL *curl_handle;
-	CURLcode res;
-
 	MemoryStruct chunk;
 	chunk.dataBuffer.resize(16384); // Meaningful starting size of 16K
 
-	curl_global_init(CURL_GLOBAL_ALL);
-
-	/* init the curl session */
-	curl_handle = curl_easy_init();
-
 	/* specify URL to get */
-	curl_easy_setopt(curl_handle, CURLOPT_URL, url.toUtf8().constData());
-
-	/* send all data to this function  */
-	curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
+	curl_easy_setopt(_curlHandle, CURLOPT_URL, url.toUtf8().constData());
 
 	/* we pass our 'chunk' struct to the callback function */
-	curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, (void *) &chunk);
-
-	/* some servers don't like requests that are made without a user-agent
-	   field, so we provide one */
-	curl_easy_setopt(curl_handle, CURLOPT_USERAGENT, "libcurl-agent/1.0");
+	curl_easy_setopt(_curlHandle, CURLOPT_WRITEDATA, (void *) &chunk);
 
 	/* get it! */
-	res = curl_easy_perform(curl_handle);
+	const CURLcode res = curl_easy_perform(_curlHandle);
 
 	/* check for errors */
 	if (res != CURLE_OK)
-		qDebug() << "curl_easy_perform() failed:" << curl_easy_strerror(res);
+	{
+		assert_unconditional_r((QStringLiteral("curl_easy_perform() failed: ") + curl_easy_strerror(res)).toUtf8().constData());
+	}
 	else
 		chunk.dataBuffer.truncate((int) chunk.bytesUsed);
-
-	/* cleanup curl stuff */
-	curl_easy_cleanup(curl_handle);
-
-	/* we're done with libcurl, so clean it up */
-	curl_global_cleanup();
 
 	return res == CURLE_OK ? chunk.dataBuffer : QByteArray();
 }

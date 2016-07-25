@@ -66,6 +66,8 @@ DEFINES += CURL_STATICLIB
 Debug:LIBS += -llibcurl_a_debug
 Release:LIBS += -llibcurl_a
 
+LIBS += -L$${DESTDIR} -lcpputils
+
 DEFINES += BUILDING_LIBCURL_CPP
 
 INCLUDEPATH += \
@@ -78,5 +80,6 @@ HEADERS += \
 	src/export.h
 
 SOURCES += \
-	src/cwebdownloader.cpp
+	src/cwebdownloader.cpp \
+    src/init_library.cpp
 
