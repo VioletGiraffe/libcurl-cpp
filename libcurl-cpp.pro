@@ -1,5 +1,5 @@
 TEMPLATE = lib
-TARGET   = myhtmlpp
+TARGET   = curl_cpp
 CONFIG += c++14
 
 QT = core
@@ -50,10 +50,33 @@ win32*:!*msvc2012:*msvc*:!*msvc2010:*msvc* {
 	QMAKE_CXXFLAGS += /FS
 }
 
-LIBS += 
+win*{
+	*msvc2013*{
+		TOOLSET = v120
+	}
+
+	*msvc2015*{
+		TOOLSET = v140
+	}
+
+	LIBS += -L../libcurl/bin/Windows/$${ARCHITECTURE}/$${TOOLSET}/
+}
+
+DEFINES += CURL_STATICLIB
+Debug:LIBS += -llibcurl_a_debug
+Release:LIBS += -llibcurl_a
+
+DEFINES += BUILDING_LIBCURL_CPP
 
 INCLUDEPATH += \
 	../cpputils \
 	../cpp-template-utils \
-	libcurl/include
+	../libcurl/include
+
+HEADERS += \
+	src/cwebdownloader.h \
+	src/export.h
+
+SOURCES += \
+	src/cwebdownloader.cpp
 
