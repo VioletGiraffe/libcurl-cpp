@@ -30,10 +30,6 @@ win*{
 	QMAKE_CXXFLAGS_WARN_ON = /W4
 }
 
-linux*{
-
-}
-
 linux*|mac*{
 	QMAKE_CXXFLAGS += -pedantic-errors
 	QMAKE_CFLAGS += -pedantic-errors
@@ -58,11 +54,11 @@ win*{
 	*msvc2015*{
 		TOOLSET = v140
 	}
-
-	LIBS += -L../libcurl/bin/Windows/$${ARCHITECTURE}/$${TOOLSET}/
 }
 
 DEFINES += CURL_STATICLIB
+
+LIBS += -L$${PWD}/../3rdparty/libcurl/lib
 Debug:LIBS += -llibcurl_a_debug
 Release:LIBS += -llibcurl_a
 
@@ -73,13 +69,13 @@ DEFINES += BUILDING_LIBCURL_CPP
 INCLUDEPATH += \
 	../cpputils \
 	../cpp-template-utils \
-	../libcurl/include
+	../3rdparty/libcurl/include
 
 HEADERS += \
 	src/cwebdownloader.h \
 	src/export.h
 
 SOURCES += \
-	src/cwebdownloader.cpp \
+    src/cwebdownloader.cpp \
     src/init_library.cpp
 

@@ -7,7 +7,7 @@ DISABLE_COMPILER_WARNINGS
 #include <QString>
 RESTORE_COMPILER_WARNINGS
 
-typedef struct Curl_easy CURL;
+typedef void CURL;
 
 class LIBCURL_CPP_EXPORT CWebDownloader
 {
