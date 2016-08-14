@@ -37,9 +37,9 @@ CWebDownloader::CWebDownloader(const QString& userAgent)
 
 	/* send all data to this function  */
 	curl_easy_setopt(_curlHandle, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
+	curl_easy_setopt(_curlHandle, CURLOPT_FOLLOWLOCATION, 1);
 
-	/* some servers don't like requests that are made without a user-agent
-	   field, so we provide one */
+	/* some servers don't like requests that are made without a user-agent field, so we provide one */
 	setUserAgent(userAgent);
 }
 
