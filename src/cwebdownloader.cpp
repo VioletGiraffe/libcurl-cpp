@@ -5,6 +5,7 @@
 
 DISABLE_COMPILER_WARNINGS
 #include <QDebug>
+#include <QString>
 RESTORE_COMPILER_WARNINGS
 
 struct MemoryStruct {
@@ -43,6 +44,10 @@ CWebDownloader::CWebDownloader(const QString& userAgent)
 	setUserAgent(userAgent);
 }
 
+CWebDownloader::CWebDownloader() : CWebDownloader(QStringLiteral("Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:58.0) Gecko/20100101 Firefox/58.0"))
+{
+}
+
 CWebDownloader::~CWebDownloader()
 {
 	/* cleanup curl stuff */
@@ -62,16 +67,23 @@ QByteArray CWebDownloader::download(const QString &url)
 	MemoryStruct chunk;
 	chunk.dataBuffer.resize(16384); // Meaningful starting size of 16K
 
-	/* specify URL to get */
+	// specify URL to get
 	curl_easy_setopt(_curlHandle, CURLOPT_URL, url.toUtf8().constData());
 
-	/* we pass our 'chunk' struct to the callback function */
+	// follow redirects up to the specified number of hops
+	curl_easy_setopt(_curlHandle, CURLOPT_FOLLOWLOCATION, 30L);
+
+	// disable SSL certificate checking
+	curl_easy_setopt(_curlHandle, CURLOPT_SSL_VERIFYPEER, 0);
+	curl_easy_setopt(_curlHandle, CURLOPT_SSL_VERIFYHOST, 0);
+
+	// we pass our 'chunk' struct to the callback function
 	curl_easy_setopt(_curlHandle, CURLOPT_WRITEDATA, (void *) &chunk);
 
-	/* get it! */
+	// get it!
 	const CURLcode res = curl_easy_perform(_curlHandle);
 
-	/* check for errors */
+	// check for errors
 	if (res != CURLE_OK)
 	{
 		assert_unconditional_r((QStringLiteral("curl_easy_perform() failed: ") + curl_easy_strerror(res)).toUtf8().constData());
