@@ -33,15 +33,20 @@ CWebDownloader::CWebDownloader(const QString& userAgent)
 {
 	curl_global_init(CURL_GLOBAL_ALL);
 
-	/* init the curl session */
 	_curlHandle = curl_easy_init();
 
-	/* send all data to this function  */
-	curl_easy_setopt(_curlHandle, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
-	curl_easy_setopt(_curlHandle, CURLOPT_FOLLOWLOCATION, 1);
+	// send all data to this function
+	assert_r(curl_easy_setopt(_curlHandle, CURLOPT_WRITEFUNCTION, WriteMemoryCallback) == CURLE_OK);
+
+	// follow redirects up to the specified number of hops
+	assert_r(curl_easy_setopt(_curlHandle, CURLOPT_FOLLOWLOCATION, 30L) == CURLE_OK);
+
+	// disable SSL certificate checking
+	assert_r(curl_easy_setopt(_curlHandle, CURLOPT_SSL_VERIFYPEER, 0) == CURLE_OK);
+	assert_r(curl_easy_setopt(_curlHandle, CURLOPT_SSL_VERIFYHOST, 0) == CURLE_OK);
 
 	/* some servers don't like requests that are made without a user-agent field, so we provide one */
-	setUserAgent(userAgent);
+	assert_r(curl_easy_setopt(_curlHandle, CURLOPT_USERAGENT, userAgent.toUtf8().constData()) == CURLE_OK);
 }
 
 CWebDownloader::CWebDownloader() : CWebDownloader(QStringLiteral("Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:58.0) Gecko/20100101 Firefox/58.0"))
@@ -57,11 +62,6 @@ CWebDownloader::~CWebDownloader()
 	curl_global_cleanup();
 }
 
-void CWebDownloader::setUserAgent(const QString& userAgent)
-{
-	assert_r(curl_easy_setopt(_curlHandle, CURLOPT_USERAGENT, userAgent.toUtf8().constData()) == CURLE_OK);
-}
-
 QByteArray CWebDownloader::download(const QString &url)
 {
 	MemoryStruct chunk;
@@ -69,13 +69,6 @@ QByteArray CWebDownloader::download(const QString &url)
 
 	// specify URL to get
 	curl_easy_setopt(_curlHandle, CURLOPT_URL, url.toUtf8().constData());
-
-	// follow redirects up to the specified number of hops
-	curl_easy_setopt(_curlHandle, CURLOPT_FOLLOWLOCATION, 30L);
-
-	// disable SSL certificate checking
-	curl_easy_setopt(_curlHandle, CURLOPT_SSL_VERIFYPEER, 0);
-	curl_easy_setopt(_curlHandle, CURLOPT_SSL_VERIFYHOST, 0);
 
 	// we pass our 'chunk' struct to the callback function
 	curl_easy_setopt(_curlHandle, CURLOPT_WRITEDATA, (void *) &chunk);

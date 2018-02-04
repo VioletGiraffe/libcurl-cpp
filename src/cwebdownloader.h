@@ -17,8 +17,6 @@ public:
 
 	~CWebDownloader();
 
-	void setUserAgent(const QString& userAgent);
-
 	QByteArray download(const QString& url);
 
 private:
